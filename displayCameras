@@ -10,7 +10,7 @@
 ### END INIT INFO
 
 myCamera="screen -dmS myCamera sh -c 'omxplayer --live  """rtsp://192.168.1.101:5554/camera""" ' ";
-camera_feeds=(myCamera)
+camera_feeds=(camObora)
 
 # Start displaying camera streams
 case "$1" in
@@ -42,17 +42,17 @@ for i in "${camera_feeds[@]}"
 do
 if !(screen -list | grep -q $i)
 then
-	echo "There is a stopped camera"
+	echo "Kamera $i nie jest uruchomiona!"
 	exit 1
 else
-	echo "Everything ok!"
+	echo "Wszystko OK!"
 fi
 done
 ;;
 
 stop)
 sudo killall omxplayer.bin
-echo "Camera display ended"
+echo "Wyłączono kamery."
 ;;
 
 repair)
@@ -64,17 +64,17 @@ then
 	sleep 5
 	if !(screen -list | grep -q $i)
 	then
-		echo "$i camera can't run!"
+		echo "Nie mozna uruchomic $i kamery!"
 		exit 1
 	else
-		echo "$i is now running!"
+		echo "Kamera $i jest uruchamiana..."
 	fi
 fi
 done
 ;;
 
 *)
-echo "wtf?"
+echo "Niepoprawne polecenie. Wybierz (start | stop | repair | test)"
 exit 1
 
 ;;

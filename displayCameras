@@ -1,0 +1,81 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides: omxplayer
+# Required-Start:
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Display cameras for monitorings.
+# Description:
+### END INIT INFO
+
+myCamera="screen -dmS myCamera sh -c 'omxplayer --live  """rtsp://192.168.1.101:5554/camera""" ' ";
+camera_feeds=(myCamera)
+
+# Start displaying camera streams
+case "$1" in
+start)
+for i in "${camera_feeds[@]}"
+do
+eval eval '$'$i
+done
+sleep 5
+for i in "${camera_feeds[@]}"
+do
+if !(screen -list | grep -q $i)
+then
+	eval eval '$'$i
+	sleep 5
+	if !(screen -list | grep -q $i)
+	then
+		echo "Nie mozna uruchomic kamery $i!"
+		exit 1
+	else
+		echo "Kamera $i jest uruchamiania..."
+	fi
+fi
+done
+;;
+
+test)
+for i in "${camera_feeds[@]}"
+do
+if !(screen -list | grep -q $i)
+then
+	echo "There is a stopped camera"
+	exit 1
+else
+	echo "Everything ok!"
+fi
+done
+;;
+
+stop)
+sudo killall omxplayer.bin
+echo "Camera display ended"
+;;
+
+repair)
+for i in "${camera_feeds[@]}"
+do
+if !(screen -list | grep -q $i)
+then
+	eval eval '$'$i
+	sleep 5
+	if !(screen -list | grep -q $i)
+	then
+		echo "$i camera can't run!"
+		exit 1
+	else
+		echo "$i is now running!"
+	fi
+fi
+done
+;;
+
+*)
+echo "wtf?"
+exit 1
+
+;;
+esac

@@ -3,6 +3,8 @@ import os
 import RPi.GPIO as GPIO
 from subprocess import Popen, call, PIPE
 import subprocess
+import thread
+import sys
 
 # Leds pins. Active by HIGH state
 # GPIO26 - LED1
@@ -53,6 +55,46 @@ def configurePinout() :
 	GPIO.setup(BTN3, GPIO.IN) ;
 
 
+programToKill = False
+
+def checkButtons(nameThread):
+    while True :
+        # check in the loop the state of buttons
+	if not getBtn1State() :
+	    # First, red button. We want to kill this script
+	    setLed1State(True) 			
+            time.sleep(1) # wait for debounce and be sure of user decision
+	    if not getBtn1State() :
+		setLed1State(False)
+		subprocess.call("sudo shutdown now", shell=True)
+		#wait until OS will kill this script
+		while True :
+		    continue
+            setLed1State(False)
+
+	if not getBtn2State() :
+	    # Second, yellow button. Restart needed
+	    setLed2State(True)
+            time.sleep(1)
+	    if not getBtn2State() :
+		setLed2State(False)
+		subprocess.call("sudo shutdown -r now", shell=True)
+		#wait until OS will kill this script	
+		while True :
+		    continue
+                
+	if not getBtn3State() :
+	    # third, blue button. Shutdown needed
+	    setLed3State(True)
+            time.sleep(1)
+	    if not getBtn3State() :
+                print "Skrypt konczy dzialanie"
+		setLed3State(False)
+                subprocess.call("sudo killall python", shell=True)
+                break
+    
+    # let the thread repeat with 1s cycle
+    time.sleep(1)
 
 def main() :
 	print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
@@ -63,7 +105,7 @@ def main() :
 	print "$$       czerwony przycisk i przytrzymac         $$"
 	print "$$                                               $$"
 	print "$$ By wylaczyc urzadzenie, prosze nacisnac       $$"
-	print "$$       i przytrzymac niebieski przycisk        $$"
+	print "$$       i przytrzymac czerwony  przycisk        $$"
 	print "$$ By zrestartowac urzadzenie,prosze nacisnac    $$"
 	print "$$       i przytrzymac zolty przycisk            $$"
 	print "$$                                               $$"
@@ -73,62 +115,13 @@ def main() :
 	
 	configurePinout()
 	
-        returnCode = subprocess.call(["./displayCameras", "stop"])
-        returnCode = subprocess.call(["./displayCameras", "start"])
+        returnCode = subprocess.call(["/etc/init.d/displayCameras", "stop"])
+        returnCode = subprocess.call(["/etc/init.d/displayCameras", "start"])
 
+        thread.start_new_thread(checkButtons, ("OtherThread", ) )
 	while True :
-                returnCode = subprocess.call(["./displayCameras", "test"])
-                if returnCode == 1:
-                    returnCode2 = subprocess.call(["./displayCameras", "repair"])
-                
-                time.sleep(5)
+                time.sleep(8)
+                returnCode2 = subprocess.call(["/etc/init.d/displayCameras", "repair"])
 
-		if not getBtn1State() :
-			# First, red button. We want to re-play camera
-			setLed1State(True) 			
-			i = 0;
-			while (not getBtn1State()) and (i < 100) :
-				i = i + 1
-				time.sleep(0.01)
-			if i == 100 :
-				setLed1State(False)
-                                print "Proba ponownego uruchomienia kamery..."
-                                myProc = Popen(["./displayCameras", "repair"], stdout=PIPE)
-                                procOut = myProc.communicate()[0]
-                                if myProc.returncode == 1 :
-                                    print "Nie moge uruchomic kamery!"
-                                else:
-                                    print "Kamera jest uruchamiana..."
-
-		if not getBtn2State() :
-			# Second, yellow button. Restart needed
-			setLed2State(True)
-			i = 0
-			while (not getBtn2State()) and (i < 100) :
-				i = i + 1
-				time.sleep(0.01)
-			if i == 100 :
-				setLed2State(False)
-				subprocess.call("sudo shutdown -r now", shell=True)
-				#wait until OS will kill this script	
-				while True :
-					continue
-                
-		if not getBtn3State() :
-			# third, blue button. Shutdown needed
-			setLed3State(True)
-			i = 0 
-			while (not getBtn3State()) and (i < 100) :
-				i = i + 1
-				time.sleep(0.01)
-			if i == 100 :
-				setLed3State(False)
-				subprocess.call("sudo shutdown now", shell=True)
-				#wait until OS will kill this script
-				while True :
-					continue
-
-		time.sleep(1);
-		
 if __name__ == "__main__" :
 	main()

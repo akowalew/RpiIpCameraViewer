@@ -5,77 +5,47 @@
 # Required-Stop:
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
-# Short-Description: Display cameras for monitorings.
+# Short-Description: Displays camera feeds for monitoring
 # Description:
 ### END INIT INFO
 
-myCamera="screen -dmS myCamera sh -c 'omxplayer --live  """rtsp://192.168.1.101:5554/camera""" ' ";
-camera_feeds=(camObora)
+# deklaracje poszczególnych kamer
+top_left="/etc/init.d/plik.bash";
+# zmienne zawierające kamery 
+camera_feeds=(top_left)
 
-# Start displaying camera streams
+# Przypadek 1, uruchomienie kamer/y 
 case "$1" in
 start)
 for i in "${camera_feeds[@]}"
 do
 eval eval '$'$i
 done
-sleep 5
-for i in "${camera_feeds[@]}"
-do
-if !(screen -list | grep -q $i)
-then
-	eval eval '$'$i
-	sleep 5
-	if !(screen -list | grep -q $i)
-	then
-		echo "Nie mozna uruchomic kamery $i!"
-		exit 1
-	else
-		echo "Kamera $i jest uruchamiania..."
-	fi
-fi
-done
+echo "Camera Display Started"
 ;;
 
-test)
-for i in "${camera_feeds[@]}"
-do
-if !(screen -list | grep -q $i)
-then
-	echo "Kamera $i nie jest uruchomiona!"
-	exit 1
-else
-	echo "Wszystko OK!"
-fi
-done
-;;
-
+# przypadek 2, zatrzymanie kamer
 stop)
 sudo killall omxplayer.bin
-echo "Wyłączono kamery."
+echo "Camera Display Ended"
 ;;
 
+# przypadek 3, naprawienie streamu
 repair)
 for i in "${camera_feeds[@]}"
 do
 if !(screen -list | grep -q $i)
 then
-	eval eval '$'$i
-	sleep 5
-	if !(screen -list | grep -q $i)
-	then
-		echo "Nie mozna uruchomic $i kamery!"
-		exit 1
-	else
-		echo "Kamera $i jest uruchamiana..."
-	fi
+eval eval '$'$i
+echo "$i is now running"
 fi
 done
 ;;
 
+# gdy nie podano dobrej komendy
 *)
-echo "Niepoprawne polecenie. Wybierz (start | stop | repair | test)"
+echo "Usage: /etc/init.d/displaycameras {start|stop|repair}"
 exit 1
 
 ;;
-esac
+esac 
